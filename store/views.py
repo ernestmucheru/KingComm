@@ -3,7 +3,7 @@ from django.shortcuts import render
 from .models import *
 import json
 import datetime
-from .utils import cookieCart, cartData
+from .utils import cookieCart, cartData, guestOrder
 
 # Create your views here.
 def store(request):
@@ -72,31 +72,7 @@ def processOrder(request):
         order, created = Order.objects.get_or_create(customer=customer, complete=False)
 
     else:
-
-        print('User is not logged in')
-        print('COOKIES:', request.COOKIES)
-        name = data['form']['name']
-        email = data['form']['email']
-
-        cookieData = cookieCart(request)
-        items = cookieData['items']
-        customer, created = Customer.objects.get_or_create(
-            email=email, 
-            )
-        customer.name = name
-        customer.save()
-
-        order = Order.objects.create(
-            customer=customer,
-            complete=False,
-            )
-        for item in items:
-            product = Product.objects.get(id=item['product']['id'])
-            orderItem = OrderItem.objects.create(
-                product=Product,
-                order=order,
-                quantity=item['quantity']
-            )
+        customer, order = guestOrder(request, data)
     
     total = float(data['form']['total'])
     order.transacrion_id = transaction_id
@@ -114,6 +90,6 @@ def processOrder(request):
                 state=data['shipping']['state'], 
                 zipcode=data['shipping']['zipcode'], 
             )
-            
+
     return JsonResponse('Payment complete!', safe=False)
 
